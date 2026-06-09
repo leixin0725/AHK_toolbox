@@ -5,6 +5,7 @@
 ; - 短按并松开：Esc
 ; - 按住并配合非修饰键：左 Ctrl，例如 CapsLock+C => Ctrl+C
 ; - 按住并配合修饰键短按：保留修饰键发送 Esc，例如 Ctrl+Shift+CapsLock => Ctrl+Shift+Esc
+; - Alt 先于 CapsLock 松开：补偿真实 Esc 的 Alt+Esc 行为
 ; - 长按后松开：只释放 Ctrl，不发送 Esc
 
 #InputLevel 1
@@ -25,11 +26,13 @@ EnforceCapsLockOff() {
 global CapsAsCtrlDown := false
 global CapsAsCtrlPressedAt := 0
 global CapsTapHadNonModifier := false
+global CapsTapEscSent := false
+global CapsTapStartedWithAlt := false
 global CapsTapInput := 0
 global CapsTapEscThresholdMs := 180
 
 *CapsLock:: {
-    global CapsAsCtrlDown, CapsAsCtrlPressedAt, CapsTapHadNonModifier, CapsTapInput
+    global CapsAsCtrlDown, CapsAsCtrlPressedAt, CapsTapHadNonModifier, CapsTapEscSent, CapsTapStartedWithAlt, CapsTapInput
     Critical
     SetKeyDelay -1
 
@@ -39,6 +42,8 @@ global CapsTapEscThresholdMs := 180
     CapsAsCtrlDown := true
     CapsAsCtrlPressedAt := A_TickCount
     CapsTapHadNonModifier := false
+    CapsTapEscSent := false
+    CapsTapStartedWithAlt := (GetKeyState("LAlt", "P") || GetKeyState("RAlt", "P"))
 
     CapsTapInput := InputHook("V")
     CapsTapInput.KeyOpt("{All}", "N")
@@ -49,7 +54,7 @@ global CapsTapEscThresholdMs := 180
 }
 
 *CapsLock Up:: {
-    global CapsAsCtrlDown, CapsAsCtrlPressedAt, CapsTapHadNonModifier, CapsTapInput, CapsTapEscThresholdMs
+    global CapsAsCtrlDown, CapsAsCtrlPressedAt, CapsTapHadNonModifier, CapsTapEscSent, CapsTapStartedWithAlt, CapsTapInput, CapsTapEscThresholdMs
     Critical
     SetKeyDelay -1
 
@@ -64,6 +69,7 @@ global CapsTapEscThresholdMs := 180
     heldMs := A_TickCount - CapsAsCtrlPressedAt
     shouldSendEsc := (
         heldMs <= CapsTapEscThresholdMs
+        && !CapsTapEscSent
         && !CapsTapHadNonModifier
         && CapsAsCtrlAllowsTapPriorKey(A_PriorKey)
     )
@@ -83,6 +89,15 @@ global CapsTapEscThresholdMs := 180
     CapsAsCtrlDown := false
     CapsAsCtrlPressedAt := 0
     CapsTapHadNonModifier := false
+    CapsTapEscSent := false
+    CapsTapStartedWithAlt := false
+}
+
+~*LAlt Up::
+~*RAlt Up:: {
+    Critical
+    SetKeyDelay -1
+    CapsAsCtrlSendAltEscOnAltUp()
 }
 
 CapsAsCtrlOnKeyDown(inputHook, vk, sc) {
@@ -99,6 +114,22 @@ CapsAsCtrlRelease() {
 
     if lctrlPhysicallyDown
         Send "{Blind}{LCtrl Down}"
+}
+
+CapsAsCtrlSendAltEscOnAltUp() {
+    global CapsAsCtrlDown, CapsAsCtrlPressedAt, CapsTapHadNonModifier, CapsTapEscSent, CapsTapStartedWithAlt, CapsTapEscThresholdMs
+
+    if (!CapsAsCtrlDown || !CapsTapStartedWithAlt || CapsTapEscSent || CapsTapHadNonModifier)
+        return
+
+    if (A_TickCount - CapsAsCtrlPressedAt > CapsTapEscThresholdMs)
+        return
+
+    Send "{Blind}{LCtrl Up}"
+    Send "{Blind}{Alt Down}{Esc}{Alt Up}"
+    Send "{Blind}{LCtrl DownR}"
+
+    CapsTapEscSent := true
 }
 
 CapsAsCtrlAllowsTapPriorKey(keyName) {
@@ -125,4 +156,3 @@ CapsAsCtrlIsModifierName(keyName) {
 
     return false
 }
-

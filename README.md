@@ -6,7 +6,7 @@
 
 | File | Hotkey | Function |
 | --- | --- | --- |
-| `capslock-tap-esc-ctrl.ahk` | `CapsLock` | 短按发送 `Esc`，按住作为左 `Ctrl`，支持 `Ctrl+Shift+CapsLock => Ctrl+Shift+Esc`。 |
+| `capslock-tap-esc-ctrl.ahk` | `CapsLock` | 短按发送 `Esc`，按住作为左 `Ctrl`，支持 `Ctrl+Shift+CapsLock => Ctrl+Shift+Esc` 和 Alt 先松开的 `Alt+Esc`。 |
 | `scroll-pause-function-keys.ahk` | `ScrollLock`, `Pause` | 映射为 `F14`, `F15`。 |
 | `copilot-to-ctrl.ahk` | Copilot / `F23` | 将 Copilot 键映射为右 `Ctrl`，并释放硬件自带的 `Win+Shift`。 |
 | `obsidian-toggle.ahk` | `PrintScreen`, `F13` | 呼出、隐藏或启动 Obsidian，并记住隐藏后切回的窗口。 |
@@ -23,4 +23,3 @@
 
 - `obsidian-toggle.ahk`: `D:\ObsidianLoader\Obsidian.vbs`
 - `git-bash-toggle.ahk`: `D:\Git\git-bash.exe`, `D:\LEIXIN2025\Notes`
-
