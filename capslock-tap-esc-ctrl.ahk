@@ -1,27 +1,16 @@
 #Requires AutoHotkey v2.0
 #SingleInstance Force
+#Include config\settings.ahk
 
 ; CapsLock 策略
 ; - 短按并松开：Esc
 ; - 按住并配合非修饰键：左 Ctrl，例如 CapsLock+C => Ctrl+C
-; - 按住并配合修饰键短按：保留修饰键发送 Esc，例如 Ctrl+Shift+CapsLock => Ctrl+Shift+Esc
+; - 按住并配合修饰键短按：保留修饰键发送 Esc
 ; - Alt 先于 CapsLock 松开：补偿真实 Esc 的 Alt+Esc 行为
 ; - 长按后松开：只释放 Ctrl，不发送 Esc
 
 #InputLevel 1
 SendLevel 1
-
-if GetKeyState("CapsLock", "T") {
-    SetCapsLockState "Off"
-}
-SetCapsLockState "AlwaysOff"
-
-SetTimer EnforceCapsLockOff, 2000
-EnforceCapsLockOff() {
-    if GetKeyState("CapsLock", "T") {
-        SetCapsLockState "AlwaysOff"
-    }
-}
 
 global CapsAsCtrlDown := false
 global CapsAsCtrlPressedAt := 0
@@ -29,13 +18,29 @@ global CapsTapHadNonModifier := false
 global CapsTapEscSent := false
 global CapsTapStartedWithAlt := false
 global CapsTapInput := 0
-global CapsTapEscThresholdMs := 180
 
+if ToolboxConfig.EnableCapsLock {
+    if GetKeyState("CapsLock", "T")
+        SetCapsLockState "Off"
+
+    SetCapsLockState "AlwaysOff"
+    SetTimer EnforceCapsLockOff, 2000
+}
+
+EnforceCapsLockOff() {
+    if GetKeyState("CapsLock", "T")
+        SetCapsLockState "AlwaysOff"
+}
+
+#HotIf ToolboxConfig.EnableCapsLock
 *CapsLock:: {
-    global CapsAsCtrlDown, CapsAsCtrlPressedAt, CapsTapHadNonModifier, CapsTapEscSent, CapsTapStartedWithAlt, CapsTapInput
+    global CapsAsCtrlDown, CapsAsCtrlPressedAt, CapsTapHadNonModifier
+    global CapsTapEscSent, CapsTapStartedWithAlt, CapsTapInput
+
     Critical
     SetKeyDelay -1
 
+    ; Ignore keyboard firmware or driver-generated repeat Down events.
     if CapsAsCtrlDown
         return
 
@@ -43,7 +48,7 @@ global CapsTapEscThresholdMs := 180
     CapsAsCtrlPressedAt := A_TickCount
     CapsTapHadNonModifier := false
     CapsTapEscSent := false
-    CapsTapStartedWithAlt := (GetKeyState("LAlt", "P") || GetKeyState("RAlt", "P"))
+    CapsTapStartedWithAlt := GetKeyState("LAlt", "P") || GetKeyState("RAlt", "P")
 
     CapsTapInput := InputHook("V")
     CapsTapInput.KeyOpt("{All}", "N")
@@ -54,7 +59,9 @@ global CapsTapEscThresholdMs := 180
 }
 
 *CapsLock Up:: {
-    global CapsAsCtrlDown, CapsAsCtrlPressedAt, CapsTapHadNonModifier, CapsTapEscSent, CapsTapStartedWithAlt, CapsTapInput, CapsTapEscThresholdMs
+    global CapsAsCtrlDown, CapsAsCtrlPressedAt, CapsTapHadNonModifier
+    global CapsTapEscSent, CapsTapStartedWithAlt, CapsTapInput
+
     Critical
     SetKeyDelay -1
 
@@ -68,19 +75,19 @@ global CapsTapEscThresholdMs := 180
 
     heldMs := A_TickCount - CapsAsCtrlPressedAt
     shouldSendEsc := (
-        heldMs <= CapsTapEscThresholdMs
+        heldMs <= ToolboxConfig.CapsTapEscThresholdMs
         && !CapsTapEscSent
         && !CapsTapHadNonModifier
         && CapsAsCtrlAllowsTapPriorKey(A_PriorKey)
     )
 
     if shouldSendEsc {
-        if (GetKeyState("LCtrl", "P") || GetKeyState("RCtrl", "P")) {
-            Send "{Blind}{Esc}"
+        if GetKeyState("LCtrl", "P") || GetKeyState("RCtrl", "P") {
+            SendEscCompat()
             CapsAsCtrlRelease()
         } else {
             CapsAsCtrlRelease()
-            Send "{Blind}{Esc}"
+            SendEscCompat()
         }
     } else {
         CapsAsCtrlRelease()
@@ -99,41 +106,48 @@ global CapsTapEscThresholdMs := 180
     SetKeyDelay -1
     CapsAsCtrlSendAltEscOnAltUp()
 }
+#HotIf
 
 CapsAsCtrlOnKeyDown(inputHook, vk, sc) {
     global CapsAsCtrlDown, CapsTapHadNonModifier
 
-    if (CapsAsCtrlDown && !CapsAsCtrlIsModifierVk(vk))
+    if CapsAsCtrlDown && !CapsAsCtrlIsModifierVk(vk)
         CapsTapHadNonModifier := true
 }
 
 CapsAsCtrlRelease() {
     lctrlPhysicallyDown := GetKeyState("LCtrl", "P")
-
     Send "{Blind}{LCtrl Up}"
 
     if lctrlPhysicallyDown
         Send "{Blind}{LCtrl Down}"
 }
 
-CapsAsCtrlSendAltEscOnAltUp() {
-    global CapsAsCtrlDown, CapsAsCtrlPressedAt, CapsTapHadNonModifier, CapsTapEscSent, CapsTapStartedWithAlt, CapsTapEscThresholdMs
+SendEscCompat() {
+    ; Some applications poll key state and can miss an instantaneous tap.
+    SendEvent "{Blind}{Esc Down}"
+    Sleep ToolboxConfig.EscCompatibilityHoldMs
+    SendEvent "{Blind}{Esc Up}"
+}
 
-    if (!CapsAsCtrlDown || !CapsTapStartedWithAlt || CapsTapEscSent || CapsTapHadNonModifier)
+CapsAsCtrlSendAltEscOnAltUp() {
+    global CapsAsCtrlDown, CapsAsCtrlPressedAt, CapsTapHadNonModifier
+    global CapsTapEscSent, CapsTapStartedWithAlt
+
+    if !CapsAsCtrlDown || !CapsTapStartedWithAlt || CapsTapEscSent || CapsTapHadNonModifier
         return
 
-    if (A_TickCount - CapsAsCtrlPressedAt > CapsTapEscThresholdMs)
+    if A_TickCount - CapsAsCtrlPressedAt > ToolboxConfig.CapsTapEscThresholdMs
         return
 
     Send "{Blind}{LCtrl Up}"
     Send "{Blind}{Alt Down}{Esc}{Alt Up}"
     Send "{Blind}{LCtrl DownR}"
-
     CapsTapEscSent := true
 }
 
 CapsAsCtrlAllowsTapPriorKey(keyName) {
-    return (keyName = "CapsLock" || CapsAsCtrlIsModifierName(keyName))
+    return keyName = "CapsLock" || CapsAsCtrlIsModifierName(keyName)
 }
 
 CapsAsCtrlIsModifierVk(vk) {
@@ -144,13 +158,11 @@ CapsAsCtrlIsModifierVk(vk) {
 
     return false
 }
-
 CapsAsCtrlIsModifierName(keyName) {
     switch keyName {
         case "Shift", "LShift", "RShift",
              "Ctrl", "Control", "LCtrl", "RCtrl", "LControl", "RControl",
-             "Alt", "LAlt", "RAlt",
-             "LWin", "RWin":
+             "Alt", "LAlt", "RAlt", "LWin", "RWin":
             return true
     }
 

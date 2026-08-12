@@ -1,136 +1,160 @@
 #Requires AutoHotkey v2.0
 #SingleInstance Force
+#Include config\settings.ahk
 
-; Ctrl+Alt+V 用剪贴板内容打开置顶临时编辑器；再次触发直接关闭。
-; 关闭时不保存、不写回剪贴板。
+; Win+F 通过本地命名管道切换 ScratchEditor。
+; 启动或 IPC 失败时不创建 AHK GUI、不读取或改写剪贴板。
 
-global ScratchGui := ""
+global ScratchEditorPipe := "\\.\pipe\" ToolboxConfig.ScratchEditorServerName
+global ScratchEditorPipeHandle := -1
 
-global WinW := 920
-global WinH := 640
-
-global DragZoneH := 52
-global Margin := 18
-global EdgeDragW := 14
-global EditTopDragExtra := 18
-
-global BgColor := "252525"
-global BarColor := "2B2B2B"
-global TextColor := "B8B8B8"
-
-global EditFontSize := 14
-global EditFont := "Consolas"
-
-OnMessage(0x0201, TryNativeDrag)
-OnMessage(0x0203, TryNativeDrag)
-
-^!v::ToggleScratch()
-
-ToggleScratch() {
-    global ScratchGui
-    global WinW, WinH, DragZoneH, Margin
-    global BgColor, BarColor, TextColor
-    global EditFontSize, EditFont
-
-    if IsObject(ScratchGui) {
-        CloseScratch()
-        return
-    }
-
-    ScratchGui := Gui("-Caption +ToolWindow +AlwaysOnTop", "Scratch")
-    ScratchGui.BackColor := BarColor
-
-    editX := Margin
-    editY := DragZoneH
-    editW := WinW - Margin * 2
-    editH := WinH - DragZoneH - Margin
-
-    ScratchGui.SetFont("s" EditFontSize " c" TextColor, EditFont)
-
-    editOptions := "vScratchText "
-        . "x" editX " y" editY " "
-        . "w" editW " h" editH " "
-        . "Multi WantTab -Wrap +VScroll -E0x200 "
-        . "Background" BgColor " c" TextColor
-
-    edit := ScratchGui.Add("Edit", editOptions, A_Clipboard)
-
-    ScratchGui.OnEvent("Close", (*) => CloseScratch())
-    ScratchGui.OnEvent("Escape", (*) => CloseScratch())
-
-    x := (A_ScreenWidth - WinW) // 2
-    y := (A_ScreenHeight - WinH) // 2
-
-    ScratchGui.Show("x" x " y" y " w" WinW " h" WinH)
-    EnableDwmRoundedCorners(ScratchGui.Hwnd)
-
-    edit.Focus()
+if ToolboxConfig.EnableScratchEditor {
+    Hotkey ToolboxConfig.ScratchEditorHotkey, ToggleScratchEditor
+    OnExit CloseScratchEditorPipe
+    SetTimer StartScratchEditorResident, -1
 }
 
-TryNativeDrag(wParam, lParam, msg, hwnd) {
-    global ScratchGui
-    global DragZoneH, EdgeDragW, EditTopDragExtra
+ToggleScratchEditor(*) {
+    if EnsureScratchEditorAndSend("toggle")
+        return true
 
-    if !IsObject(ScratchGui)
-        return
+    ShowScratchEditorFailureNotice()
+    return false
+}
 
-    GetCursorScreenPos(&mx, &my)
-    WinGetPos(&wx, &wy, &ww, &wh, "ahk_id " ScratchGui.Hwnd)
+StartScratchEditorResident(*) {
+    EnsureScratchEditorResident()
+}
 
-    relX := mx - wx
-    relY := my - wy
+EnsureScratchEditorResident() {
+    if IsScratchEditorReady()
+        return true
 
-    if (relX < 0 || relX >= ww || relY < 0 || relY >= wh)
-        return
+    executable := ToolboxConfig.ScratchEditorExecutable
+    if executable = "" || !FileExist(executable)
+        return false
 
-    isDragZone :=
-        relY < DragZoneH + EditTopDragExtra
-        || relX < EdgeDragW
-        || relX >= ww - EdgeDragW
-        || relY >= wh - EdgeDragW
+    try Run Chr(34) executable Chr(34) " --background"
+    catch
+        return false
 
-    if !isDragZone
-        return
+    deadline := A_TickCount + ToolboxConfig.ScratchEditorStartupTimeoutMs
+    while A_TickCount < deadline {
+        if IsScratchEditorReady()
+            return true
+        Sleep 10
+    }
 
-    DllCall("ReleaseCapture")
-    DllCall(
-        "SendMessage",
-        "Ptr", ScratchGui.Hwnd,
-        "UInt", 0x00A1,
-        "Ptr", 2,
+    return false
+}
+
+IsScratchEditorReady() {
+    global ScratchEditorPipe
+
+    handle := DllCall(
+        "CreateFileW",
+        "Str", ScratchEditorPipe,
+        "UInt", 0xC0000000, ; GENERIC_READ | GENERIC_WRITE
+        "UInt", 0,
+        "Ptr", 0,
+        "UInt", 3,          ; OPEN_EXISTING
+        "UInt", 0,
+        "Ptr", 0,
+        "Ptr"
+    )
+    if handle = -1
+        return false
+
+    request := '{"command":"status","requestId":"ahk-ready"}'
+    payloadChars := StrPut(request "`n", "UTF-8")
+    payload := Buffer(payloadChars)
+    payloadBytes := StrPut(request "`n", payload, "UTF-8") - 1
+    bytesWritten := 0
+    wrote := DllCall(
+        "WriteFile", "Ptr", handle, "Ptr", payload, "UInt", payloadBytes,
+        "UInt*", &bytesWritten, "Ptr", 0
+    )
+    if !wrote || bytesWritten != payloadBytes {
+        DllCall "CloseHandle", "Ptr", handle
+        return false
+    }
+
+    response := Buffer(65536, 0)
+    bytesRead := 0
+    read := DllCall(
+        "ReadFile", "Ptr", handle, "Ptr", response, "UInt", response.Size,
+        "UInt*", &bytesRead, "Ptr", 0
+    )
+    DllCall "CloseHandle", "Ptr", handle
+
+    if !read || !bytesRead
+        return false
+
+    status := StrGet(response, bytesRead, "UTF-8")
+    return InStr(status, '"ready":true') > 0
+}
+
+EnsureScratchEditorAndSend(command) {
+    if SendScratchEditorCommand(command)
+        return true
+    if !EnsureScratchEditorResident()
+        return false
+    return SendScratchEditorCommand(command)
+}
+
+SendScratchEditorCommand(command) {
+    global ScratchEditorPipe, ScratchEditorPipeHandle
+
+    if ScratchEditorPipeHandle = -1 {
+        ScratchEditorPipeHandle := DllCall(
+            "CreateFileW",
+            "Str", ScratchEditorPipe,
+            "UInt", 0x40000000, ; GENERIC_WRITE
+            "UInt", 0,
+            "Ptr", 0,
+            "UInt", 3,          ; OPEN_EXISTING
+            "UInt", 0,
+            "Ptr", 0,
+            "Ptr"
+        )
+    }
+    if ScratchEditorPipeHandle = -1
+        return false
+
+    payloadChars := StrPut(command "`n", "UTF-8")
+    payload := Buffer(payloadChars)
+    payloadBytes := StrPut(command "`n", payload, "UTF-8") - 1
+    bytesWritten := 0
+    ok := DllCall(
+        "WriteFile",
+        "Ptr", ScratchEditorPipeHandle,
+        "Ptr", payload,
+        "UInt", payloadBytes,
+        "UInt*", &bytesWritten,
         "Ptr", 0
     )
 
-    return 0
-}
-
-GetCursorScreenPos(&x, &y) {
-    pt := Buffer(8, 0)
-    DllCall("GetCursorPos", "Ptr", pt)
-
-    x := NumGet(pt, 0, "Int")
-    y := NumGet(pt, 4, "Int")
-}
-
-EnableDwmRoundedCorners(hwnd) {
-    cornerPreference := 2
-
-    DllCall(
-        "dwmapi\DwmSetWindowAttribute",
-        "Ptr", hwnd,
-        "UInt", 33,
-        "Int*", cornerPreference,
-        "UInt", 4
-    )
-}
-
-CloseScratch() {
-    global ScratchGui
-
-    if IsObject(ScratchGui) {
-        try ScratchGui.Destroy()
+    if !ok || bytesWritten != payloadBytes {
+        CloseScratchEditorPipe()
+        return false
     }
-
-    ScratchGui := ""
+    return true
 }
 
+CloseScratchEditorPipe(*) {
+    global ScratchEditorPipeHandle
+
+    if ScratchEditorPipeHandle != -1 {
+        DllCall "CloseHandle", "Ptr", ScratchEditorPipeHandle
+        ScratchEditorPipeHandle := -1
+    }
+}
+
+ShowScratchEditorFailureNotice() {
+    ToolTip "ScratchEditor 启动失败；剪贴板内容未被改动，可直接粘贴使用。"
+    SetTimer HideScratchEditorFailureNotice, -ToolboxConfig.ScratchEditorFailureNoticeMs
+}
+
+HideScratchEditorFailureNotice(*) {
+    ToolTip()
+}
