@@ -1,6 +1,7 @@
 #Requires AutoHotkey v2.0
 #SingleInstance Force
 #Include config\settings.ahk
+#Include lib\virtual-desktop.ahk
 
 ; PrintScreen / F13 呼出、隐藏或启动 Obsidian。
 ; 可选的 VirtualDesktopAccessor.dll 可把其他虚拟桌面的窗口移到当前桌面；
@@ -8,9 +9,6 @@
 
 global ObsidianLastActiveWindow := 0
 global ObsidianLastToggleTime := 0
-global ObsidianVdaHandle := 0
-global ObsidianVdmClsid := "{AA509086-5CA9-4C25-8F95-589D3C07B48A}"
-global ObsidianVdmIid := "{A5CD92FF-29BE-454C-8D04-D82879FB3F1B}"
 
 if ToolboxConfig.EnableObsidian {
     for hotkeyName in ToolboxConfig.ObsidianHotkeys
@@ -50,25 +48,25 @@ ToggleObsidianWindowsCore() {
 
         if WinActive("ahk_exe Obsidian.exe") {
             for _, hwnd in obsidianWindows {
-                if ObsidianIsWindowOnCurrentDesktop(hwnd)
+                if IsWindowOnCurrentDesktop(hwnd)
                     try WinMinimize "ahk_id " hwnd
             }
 
             if ObsidianLastActiveWindow
                     && WinExist("ahk_id " ObsidianLastActiveWindow)
-                    && ObsidianIsWindowOnCurrentDesktop(ObsidianLastActiveWindow) {
+                    && IsWindowOnCurrentDesktop(ObsidianLastActiveWindow) {
                 try WinActivate "ahk_id " ObsidianLastActiveWindow
             }
             return
         }
 
         ObsidianLastActiveWindow := currentActive
-        currentDesktop := ObsidianGetCurrentDesktopNumber()
+        currentDesktop := GetCurrentDesktopNumber()
 
         if currentDesktop >= 0 {
             for _, hwnd in obsidianWindows {
-                if ObsidianIsWindowOnDesktopNumber(hwnd, currentDesktop) != 1
-                    ObsidianMoveWindowToDesktopNumber(hwnd, currentDesktop)
+                if IsWindowOnDesktopNumber(hwnd, currentDesktop) != 1
+                    MoveWindowToDesktopNumber(hwnd, currentDesktop)
             }
 
             Sleep 150
@@ -79,7 +77,7 @@ ToggleObsidianWindowsCore() {
         ; Documented fallback: never activate a window on another desktop.
         Loop obsidianWindows.Length {
             hwnd := obsidianWindows[obsidianWindows.Length - A_Index + 1]
-            if ObsidianIsWindowOnCurrentDesktop(hwnd)
+            if IsWindowOnCurrentDesktop(hwnd)
                 ObsidianRestoreAndActivate(hwnd)
         }
     } finally {
@@ -90,7 +88,7 @@ ToggleObsidianWindowsCore() {
 ObsidianActivateWindowsOnDesktop(windows, desktopNumber) {
     Loop windows.Length {
         hwnd := windows[windows.Length - A_Index + 1]
-        if ObsidianIsWindowOnDesktopNumber(hwnd, desktopNumber) = 1
+        if IsWindowOnDesktopNumber(hwnd, desktopNumber) = 1
             ObsidianRestoreAndActivate(hwnd)
     }
 }
@@ -158,69 +156,3 @@ ObsidianRunUnelevated(executable, workingDirectory := "") {
     desktopShell := ComObject("Shell.Application").Windows.Item(SWC_DESKTOP).Document.Application
     desktopShell.ShellExecute(executable, "", workingDirectory, "open", 1)
 }
-
-ObsidianLoadVirtualDesktopAccessor() {
-    global ObsidianVdaHandle
-
-    if ObsidianVdaHandle
-        return ObsidianVdaHandle
-    if !FileExist(ToolboxConfig.VirtualDesktopAccessorDll)
-        return 0
-
-    try ObsidianVdaHandle := DllCall(
-        "LoadLibrary", "Str", ToolboxConfig.VirtualDesktopAccessorDll, "Ptr")
-    catch
-        ObsidianVdaHandle := 0
-    return ObsidianVdaHandle
-}
-
-ObsidianGetCurrentDesktopNumber() {
-    if !ObsidianLoadVirtualDesktopAccessor()
-        return -1
-    try return DllCall(
-        ToolboxConfig.VirtualDesktopAccessorDll "\GetCurrentDesktopNumber", "Int")
-    catch
-        return -1
-}
-
-ObsidianIsWindowOnDesktopNumber(hwnd, number) {
-    if !ObsidianLoadVirtualDesktopAccessor()
-        return -1
-    try return DllCall(
-        ToolboxConfig.VirtualDesktopAccessorDll "\IsWindowOnDesktopNumber",
-        "Ptr", hwnd, "Int", number, "Int")
-    catch
-        return -1
-}
-
-ObsidianMoveWindowToDesktopNumber(hwnd, number) {
-    if !ObsidianLoadVirtualDesktopAccessor()
-        return false
-    try return DllCall(
-        ToolboxConfig.VirtualDesktopAccessorDll "\MoveWindowToDesktopNumber",
-        "Ptr", hwnd, "Int", number, "Int") = 1
-    catch
-        return false
-}
-
-ObsidianGetVirtualDesktopManager() {
-    global ObsidianVdmClsid, ObsidianVdmIid
-    try return ComObject(ObsidianVdmClsid, ObsidianVdmIid)
-    catch
-        return 0
-}
-
-ObsidianIsWindowOnCurrentDesktop(hwnd) {
-    vdm := ObsidianGetVirtualDesktopManager()
-    if !vdm
-        return false
-
-    try {
-        onCurrent := 0
-        ComCall 3, vdm, "Ptr", hwnd, "Int*", &onCurrent
-        return onCurrent != 0
-    } catch {
-        return false
-    }
-}
-

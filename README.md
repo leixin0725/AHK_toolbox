@@ -35,7 +35,7 @@
 | `Ctrl+Shift+Alt+Insert` | 新建 Git Bash 窗口 | Git for Windows |
 | `Win+Insert` | 呼出全部 Windows Terminal 窗口；再次触发全部最小化 | Windows Terminal |
 | `Win+Alt+Insert` | 新建 Windows Terminal 窗口 | Windows Terminal |
-| `Ctrl+Alt+G` | 呼出、隐藏或启动 Chrome | Chrome |
+| `Ctrl+Alt+G` | 跨虚拟桌面呼出、隐藏或启动 Chrome（含 PWA / 应用模式窗口） | Chrome；跨虚拟桌面移动另需 DLL |
 | `Win+F` | 切换 ScratchEditor | ScratchEditor |
 
 `ScrollLock` 只负责映射 `F14`；ScratchEditor 使用 `Win+F`，两者不会争用同一个按键。
@@ -57,7 +57,7 @@
 | `scratch-editor.ahk` | ScratchEditor IPC 客户端 |
 
 这些文件名和根目录位置作为兼容入口保留。终端模块内部共享 `lib/terminal-toggle.ahk`，
-不需要单独运行 `lib` 下的文件。
+Obsidian 与 Chrome 共享 `lib/virtual-desktop.ahk`；不需要单独运行 `lib` 下的文件。
 
 ## 配置
 
@@ -115,10 +115,11 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\build.ps1 -Pre
 本仓库只使用上游公开的生产行为：`--background`、状态探测和 `toggle`。测试模式、迁移阶段
 开关与测试专用 `quit` 命令不属于本仓库接口。
 
-## Obsidian 与虚拟桌面
+## Obsidian、Chrome 与虚拟桌面
 
-普通的启动、呼出和最小化不需要额外 DLL。脚本会自动查找常见 Obsidian 安装路径，也可在
-本地配置中指定 `ObsidianExecutable` 或 `ObsidianLauncher`。
+普通的启动、呼出和最小化不需要额外 DLL。脚本会自动查找常见 Obsidian 和 Chrome 安装路径，
+也可在本地配置中指定 `ObsidianExecutable`、`ObsidianLauncher` 或 `ChromeExecutable`。Chrome
+浏览器、PWA 与应用模式窗口使用相同的跨桌面切换行为。
 
 跨虚拟桌面移动其他进程窗口需要
 [Ciantic/VirtualDesktopAccessor](https://github.com/Ciantic/VirtualDesktopAccessor)。从其
