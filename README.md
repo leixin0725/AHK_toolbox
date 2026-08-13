@@ -122,11 +122,15 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\build.ps1 -Pre
 浏览器、PWA 与应用模式窗口使用相同的跨桌面切换行为。
 
 跨虚拟桌面移动其他进程窗口需要
-[Ciantic/VirtualDesktopAccessor](https://github.com/Ciantic/VirtualDesktopAccessor)。从其
-[Releases](https://github.com/Ciantic/VirtualDesktopAccessor/releases) 下载与你的 Windows
-版本兼容的 `VirtualDesktopAccessor.dll`，放到仓库的 `lib` 目录，或配置完整路径。
-该项目当前版本面向 Windows 11 24H2 及更新版本，Windows 更新可能改变未公开的虚拟桌面接口，
-因此应优先使用其最新版本。
+[Ciantic/VirtualDesktopAccessor](https://github.com/Ciantic/VirtualDesktopAccessor)。仓库已在
+`lib` 目录包含面向 Windows 11 24H2 / 25H2 的 `VirtualDesktopAccessor.dll`；其来源、版本、
+哈希与许可证见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。如需覆盖默认文件，可在本地
+配置中指定其他完整路径。
+
+Windows 更新可能改变该 DLL 使用的未公开虚拟桌面接口。升级时应从上游
+[Releases](https://github.com/Ciantic/VirtualDesktopAccessor/releases) 下载与当前 Windows 版本
+兼容的文件，替换 `lib\VirtualDesktopAccessor.dll`，同步更新第三方说明中的版本与哈希，
+然后重新加载脚本。
 
 DLL 缺失、加载失败或接口不兼容时，脚本不会猜测窗口归属，也不会把用户带到其他虚拟桌面；
 它会退回 Windows 文档化的 `IVirtualDesktopManager`，只处理能确认位于当前桌面的窗口。
@@ -160,4 +164,5 @@ AHK 脚本；Chrome 和普通 Obsidian 启动会通过 Explorer 尽量保持普�
 ## 许可
 
 本仓库采用 [MIT License](LICENSE)。ScratchEditor 和 VirtualDesktopAccessor 是独立项目，
-分别遵循各自仓库声明的许可。
+分别遵循各自仓库声明的许可；随仓库分发的第三方组件详见
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
