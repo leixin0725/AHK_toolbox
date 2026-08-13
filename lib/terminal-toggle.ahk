@@ -44,8 +44,11 @@ ToggleTerminalWindows(windowCriteria, &lastActiveWindow, &lastToggleTime, termin
 
 GetPreferredTerminalDirectory() {
     fallbackDirectory := ToolboxConfig.TerminalFallbackDirectory
-    if fallbackDirectory = "" || !DirExist(fallbackDirectory)
-        fallbackDirectory := A_ScriptDir
+    if fallbackDirectory = "" || !DirExist(fallbackDirectory) {
+        fallbackDirectory := EnvGet("USERPROFILE")
+        if fallbackDirectory = "" || !DirExist(fallbackDirectory)
+            fallbackDirectory := A_ScriptDir
+    }
 
     ; WinGetList follows z-order, so the first match is the most recent Explorer.
     explorerWindows := WinGetList("ahk_class CabinetWClass ahk_exe explorer.exe")
