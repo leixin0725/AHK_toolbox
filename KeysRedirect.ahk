@@ -8,6 +8,7 @@
 #Include capslock-tap-esc-ctrl.ahk
 #Include scroll-pause-function-keys.ahk
 #Include copilot-to-ctrl.ahk
+#Include virtual-desktop-cycle.ahk
 #Include obsidian-toggle.ahk
 #Include git-bash-toggle.ahk
 #Include windows-terminal-toggle.ahk

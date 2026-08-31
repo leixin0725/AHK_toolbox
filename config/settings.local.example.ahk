@@ -8,6 +8,7 @@
 
 ; ToolboxConfig.ObsidianLauncher := "C:\Tools\ObsidianLaunch.ahk"
 ; ToolboxConfig.ObsidianLauncherWorkingDirectory := "C:\Tools"
+; ToolboxConfig.VirtualDesktopSwitcherExecutable := "C:\Tools\VirtualDesktop11-24H2.exe"
 ; ToolboxConfig.VirtualDesktopAccessorDll := "C:\Tools\VirtualDesktopAccessor.dll"
 ; ToolboxConfig.GitBashExecutable := "C:\Program Files\Git\git-bash.exe"
 ; ToolboxConfig.TerminalFallbackDirectory := A_MyDocuments

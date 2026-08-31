@@ -30,6 +30,7 @@
 | 按住 `CapsLock` | 作为左 `Ctrl` | 无 |
 | `ScrollLock` / `Pause` | 映射为 `F14` / `F15` | 无 |
 | Copilot 键（`F23` 或 `Win+Shift+F23`） | 映射为右 `Ctrl`，并修正 Win/Shift 卡键 | 带 Copilot 键的键盘 |
+| `Ctrl+Win+Left` / `Ctrl+Win+Right` | 使用 Windows 原生动画循环切换虚拟桌面 | `VirtualDesktop11-24H2.exe` |
 | `PrintScreen` / `F13` | 呼出、隐藏或启动 Obsidian | Obsidian；跨虚拟桌面移动另需 DLL |
 | `Ctrl+Shift+Insert` | 呼出全部 Git Bash 窗口；再次触发全部最小化 | Git for Windows |
 | `Ctrl+Shift+Alt+Insert` | 新建 Git Bash 窗口 | Git for Windows |
@@ -51,6 +52,7 @@
 | `capslock-tap-esc-ctrl.ahk` | CapsLock 双角色键 |
 | `scroll-pause-function-keys.ahk` | F14 / F15 扩展键 |
 | `copilot-to-ctrl.ahk` | Copilot 键映射 |
+| `virtual-desktop-cycle.ahk` | 虚拟桌面左右循环切换 |
 | `obsidian-toggle.ahk` | Obsidian 窗口切换 |
 | `git-bash-toggle.ahk` | Git Bash 窗口切换 |
 | `windows-terminal-toggle.ahk` | Windows Terminal 窗口切换 |
@@ -75,6 +77,7 @@ Copy-Item .\config\settings.local.example.ahk .\config\settings.local.ahk
 - `Enable...`：启用或禁用模块。
 - `...Hotkey` / `ObsidianHotkeys`：修改应用快捷键。
 - `GitBashExecutable`、`WindowsTerminalExecutable`、`ChromeExecutable`：指定程序路径。
+- `VirtualDesktopSwitcherExecutable`：指定虚拟桌面循环切换程序路径。
 - `ObsidianLauncher`：指定自定义启动器；可用于自行实现启动、退出后备份等工作流。
 - `VirtualDesktopAccessorDll`：指定可选虚拟桌面 DLL。
 - `TerminalFallbackDirectory`：没有可用文件资源管理器窗口时的终端目录。
@@ -117,6 +120,12 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\build.ps1 -Pre
 开关与测试专用 `quit` 命令不属于本仓库接口。
 
 ## Obsidian、Chrome 与虚拟桌面
+
+`Ctrl+Win+Left` 和 `Ctrl+Win+Right` 通过
+[MScholtes/VirtualDesktop](https://github.com/MScholtes/VirtualDesktop) 的
+`VirtualDesktop11-24H2.exe` 循环切换虚拟桌面，并保留 Windows 原生切换动画。仓库已在
+`lib` 目录包含 1.21 版本；其来源、哈希与许可证见
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
 
 普通的启动、呼出和最小化不需要额外 DLL。脚本会自动查找常见 Obsidian 和 Chrome 安装路径，
 也可在本地配置中指定 `ObsidianExecutable`、`ObsidianLauncher` 或 `ChromeExecutable`。Chrome

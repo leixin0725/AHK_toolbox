@@ -7,6 +7,7 @@ class ToolboxConfig {
     static EnableCapsLock := true
     static EnableFunctionKeys := true
     static EnableCopilotKey := true
+    static EnableVirtualDesktopCycle := true
     static EnableObsidian := true
     static EnableGitBash := true
     static EnableWindowsTerminal := true
@@ -21,6 +22,8 @@ class ToolboxConfig {
     static EscCompatibilityHoldMs := 45
 
     ; Application hotkeys
+    static VirtualDesktopLeftHotkey := "^#Left"
+    static VirtualDesktopRightHotkey := "^#Right"
     static ObsidianHotkeys := ["PrintScreen", "F13"]
     static GitBashToggleHotkey := "^+Insert"
     static GitBashNewWindowHotkey := "^+!Insert"
@@ -33,6 +36,7 @@ class ToolboxConfig {
     static ObsidianLauncher := ""
     static ObsidianLauncherWorkingDirectory := ""
     static ObsidianExecutable := ""
+    static VirtualDesktopSwitcherExecutable := A_ScriptDir "\lib\VirtualDesktop11-24H2.exe"
     static VirtualDesktopAccessorDll := A_ScriptDir "\lib\VirtualDesktopAccessor.dll"
     static GitBashExecutable := ""
     static WindowsTerminalExecutable := "wt.exe"
