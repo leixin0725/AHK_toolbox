@@ -1,9 +1,11 @@
 #Requires AutoHotkey v2.0
 #SingleInstance Force
 #Include config\settings.ahk
+#Include lib\run-unelevated.ahk
 
 ; Win+F 通过本地命名管道切换 ScratchEditor。
 ; 启动或 IPC 失败时不创建 AHK GUI、不读取或改写剪贴板。
+; 如果本脚本以管理员身份运行，ScratchEditor 会通过普通权限 Explorer 启动。
 
 global ScratchEditorPipe := "\\.\pipe\" ToolboxConfig.ScratchEditorServerName
 global ScratchEditorPipeHandle := -1
@@ -34,7 +36,7 @@ EnsureScratchEditorResident() {
     if executable = "" || !FileExist(executable)
         return false
 
-    try Run Chr(34) executable Chr(34) " --background"
+    try RunUnelevated(executable, "--background")
     catch
         return false
 

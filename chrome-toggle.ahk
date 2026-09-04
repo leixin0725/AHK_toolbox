@@ -1,6 +1,7 @@
 #Requires AutoHotkey v2.0
 #SingleInstance Force
 #Include config\settings.ahk
+#Include lib\run-unelevated.ahk
 #Include lib\virtual-desktop.ahk
 
 ; Ctrl+Alt+G 呼出、隐藏或启动 Chrome。
@@ -115,14 +116,6 @@ LaunchChrome() {
         WinRestore "ahk_id " chromeHwnd
         WinActivate "ahk_id " chromeHwnd
     }
-}
-
-RunUnelevated(target, params := "", workingDir := "") {
-    static VT_UI4 := 0x13
-    static SWC_DESKTOP := ComValue(VT_UI4, 0x8)
-
-    desktopShell := ComObject("Shell.Application").Windows.Item(SWC_DESKTOP).Document.Application
-    desktopShell.ShellExecute(target, params, workingDir, "open", 1)
 }
 
 GetChromePath() {
