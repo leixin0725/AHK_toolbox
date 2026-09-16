@@ -5,6 +5,7 @@
 
 ; Win+Insert 批量呼出/最小化 Windows Terminal。
 ; Win+Alt+Insert 始终新建窗口。
+; Win+Alt+Shift+Insert 始终新建管理员窗口。
 
 global WindowsTerminalLastActiveWindow := 0
 global WindowsTerminalLastToggleTime := 0
@@ -12,6 +13,7 @@ global WindowsTerminalLastToggleTime := 0
 if ToolboxConfig.EnableWindowsTerminal {
     Hotkey ToolboxConfig.WindowsTerminalToggleHotkey, ToggleWindowsTerminalWindows
     Hotkey ToolboxConfig.WindowsTerminalNewWindowHotkey, OpenNewWindowsTerminalWindow
+    Hotkey ToolboxConfig.WindowsTerminalAdminNewWindowHotkey, OpenNewElevatedWindowsTerminalWindow
 }
 
 ToggleWindowsTerminalWindows(*) {
@@ -28,4 +30,9 @@ ToggleWindowsTerminalWindows(*) {
 OpenNewWindowsTerminalWindow(*) {
     global WindowsTerminalLastActiveWindow
     OpenNewTerminalWindow("windows-terminal", &WindowsTerminalLastActiveWindow)
+}
+
+OpenNewElevatedWindowsTerminalWindow(*) {
+    global WindowsTerminalLastActiveWindow
+    OpenNewTerminalWindow("windows-terminal", &WindowsTerminalLastActiveWindow, true)
 }

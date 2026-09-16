@@ -29,6 +29,7 @@ class ToolboxConfig {
     static GitBashNewWindowHotkey := "^+!Insert"
     static WindowsTerminalToggleHotkey := "#Insert"
     static WindowsTerminalNewWindowHotkey := "#!Insert"
+    static WindowsTerminalAdminNewWindowHotkey := "#+!Insert"
     static ChromeToggleHotkey := "!^g"
     static ScratchEditorHotkey := "$#f"
 

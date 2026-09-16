@@ -2,9 +2,9 @@
 #Include %A_ScriptDir%\config\settings.ahk
 #Include %A_ScriptDir%\lib\run-unelevated.ahk
 
-OpenNewTerminalWindow(terminalKind, &lastActiveWindow) {
+OpenNewTerminalWindow(terminalKind, &lastActiveWindow, elevated := false) {
     lastActiveWindow := WinActive("A")
-    LaunchTerminal(terminalKind, GetPreferredTerminalDirectory())
+    LaunchTerminal(terminalKind, GetPreferredTerminalDirectory(), elevated)
 }
 
 ToggleTerminalWindows(windowCriteria, &lastActiveWindow, &lastToggleTime, terminalKind) {
@@ -98,7 +98,7 @@ GetExplorerWindowDirectory(shellWindows, explorerHwnd) {
     return firstValidDirectory
 }
 
-LaunchTerminal(terminalKind, workingDirectory) {
+LaunchTerminal(terminalKind, workingDirectory, elevated := false) {
     try {
         if terminalKind = "git-bash" {
             RunUnelevated(GetGitBashExecutable(), "", workingDirectory)
@@ -108,7 +108,10 @@ LaunchTerminal(terminalKind, workingDirectory) {
         if terminalKind = "windows-terminal" {
             executable := ToolboxConfig.WindowsTerminalExecutable
             quotedDirectory := Chr(34) workingDirectory Chr(34)
-            RunUnelevated(executable, "-w new -d " quotedDirectory, workingDirectory)
+            if elevated
+                Run '*RunAs "' executable '" -w new -d ' quotedDirectory, workingDirectory
+            else
+                RunUnelevated(executable, "-w new -d " quotedDirectory, workingDirectory)
             return true
         }
     } catch as err {

@@ -16,4 +16,5 @@
 ;     "\ScratchEditor\AhkEditor\ScratchEditor.exe"
 
 ; ToolboxConfig.ChromeToggleHotkey := "!^g"
+; ToolboxConfig.WindowsTerminalAdminNewWindowHotkey := "#+!Insert"
 ; ToolboxConfig.ScratchEditorHotkey := "$#f"

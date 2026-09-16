@@ -36,12 +36,14 @@
 | `Ctrl+Shift+Alt+Insert` | 新建 Git Bash 窗口 | Git for Windows |
 | `Win+Insert` | 呼出全部 Windows Terminal 窗口；再次触发全部最小化 | Windows Terminal |
 | `Win+Alt+Insert` | 新建 Windows Terminal 窗口 | Windows Terminal |
+| `Win+Alt+Shift+Insert` | 新建管理员权限的 Windows Terminal 窗口 | Windows Terminal |
 | `Ctrl+Alt+G` | 跨虚拟桌面呼出、隐藏或启动 Chrome（含 PWA / 应用模式窗口） | Chrome；跨虚拟桌面移动另需 DLL |
 | `Win+F` | 切换 ScratchEditor | ScratchEditor |
 
 `ScrollLock` 只负责映射 `F14`；ScratchEditor 使用 `Win+F`，两者不会争用同一个按键。
 终端新建窗口时会优先采用最近使用的文件资源管理器目录，无法获取时回退到配置目录
-（默认“文档”目录）；配置目录不可用时再依次回退到当前用户目录和脚本目录。
+（默认“文档”目录）；配置目录不可用时再依次回退到当前用户目录和脚本目录。管理员终端
+使用相同的目录选择规则，并在脚本尚未提升权限时显示 UAC 提示。
 
 ## 按需运行
 
