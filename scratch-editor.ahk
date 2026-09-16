@@ -9,6 +9,7 @@
 
 global ScratchEditorPipe := "\\.\pipe\" ToolboxConfig.ScratchEditorServerName
 global ScratchEditorPipeHandle := -1
+global ScratchEditorLastActiveWindow := 0
 
 if ToolboxConfig.EnableScratchEditor {
     Hotkey ToolboxConfig.ScratchEditorHotkey, ToggleScratchEditor
@@ -18,11 +19,44 @@ if ToolboxConfig.EnableScratchEditor {
 }
 
 ToggleScratchEditor(*) {
+    global ScratchEditorLastActiveWindow
+
+    scratchEditorWindow := GetScratchEditorWindowCriteria()
+    if WinActive(scratchEditorWindow) {
+        if EnsureScratchEditorAndSend("toggle") {
+            ; Qt 收到 IPC 后才会隐藏窗口,延后恢复焦点避免被隐藏动作覆盖。
+            SetTimer RestoreScratchEditorLastActiveWindow, -50
+            return true
+        }
+
+        ShowScratchEditorFailureNotice()
+        return false
+    }
+
+    ScratchEditorLastActiveWindow := WinActive("A")
     if EnsureScratchEditorAndSend("toggle")
         return true
 
     ShowScratchEditorFailureNotice()
     return false
+}
+
+GetScratchEditorWindowCriteria() {
+    SplitPath ToolboxConfig.ScratchEditorExecutable, &processName
+    return "ahk_exe " processName
+}
+
+RestoreScratchEditorLastActiveWindow() {
+    global ScratchEditorLastActiveWindow
+
+    if !ScratchEditorLastActiveWindow
+        return
+    if !WinExist("ahk_id " ScratchEditorLastActiveWindow)
+        return
+    if !IsWindowOnCurrentDesktop(ScratchEditorLastActiveWindow)
+        return
+
+    try WinActivate "ahk_id " ScratchEditorLastActiveWindow
 }
 
 StartScratchEditorResident(*) {
