@@ -166,8 +166,10 @@ DLL 缺失、加载失败或接口不兼容时，脚本不会猜测窗口归属�
 
 ### 管理员窗口中快捷键无效
 
-Windows 通常不允许普通权限进程向更高权限窗口注入输入。仅在确有需要时以管理员身份运行
-AHK 脚本；Chrome、ScratchEditor 和普通 Obsidian 启动会通过 Explorer 尽量保持普通权限。
+Windows 通常不允许普通权限进程向更高权限窗口注入输入。统一入口会在需要时请求 UAC，
+确保 AHK 始终以管理员权限运行；通过脚本启动的 Obsidian、Git Bash、Windows Terminal、
+Chrome 和 ScratchEditor 则经由 Explorer 保持普通权限。手动重新加载普通权限实例时，
+需要接受一次 UAC 提示。
 
 ### ScratchEditor 一直提示启动失败
 

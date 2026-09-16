@@ -1,5 +1,6 @@
 #Requires AutoHotkey v2.0
 #Include %A_ScriptDir%\config\settings.ahk
+#Include %A_ScriptDir%\lib\run-unelevated.ahk
 
 OpenNewTerminalWindow(terminalKind, &lastActiveWindow) {
     lastActiveWindow := WinActive("A")
@@ -100,14 +101,14 @@ GetExplorerWindowDirectory(shellWindows, explorerHwnd) {
 LaunchTerminal(terminalKind, workingDirectory) {
     try {
         if terminalKind = "git-bash" {
-            Run GetGitBashExecutable(), workingDirectory
+            RunUnelevated(GetGitBashExecutable(), "", workingDirectory)
             return true
         }
 
         if terminalKind = "windows-terminal" {
             executable := ToolboxConfig.WindowsTerminalExecutable
             quotedDirectory := Chr(34) workingDirectory Chr(34)
-            Run Chr(34) executable Chr(34) " -w new -d " quotedDirectory, workingDirectory
+            RunUnelevated(executable, "-w new -d " quotedDirectory, workingDirectory)
             return true
         }
     } catch as err {

@@ -2,6 +2,7 @@
 #SingleInstance Force
 #Include config\settings.ahk
 #Include lib\virtual-desktop.ahk
+#Include lib\run-unelevated.ahk
 
 ; PrintScreen / F13 呼出、隐藏或启动 Obsidian。
 ; 可选的 VirtualDesktopAccessor.dll 可把其他虚拟桌面的窗口移到当前桌面；
@@ -114,9 +115,9 @@ LaunchObsidian() {
                 SplitPath launcher, , &workingDirectory
 
             if RegExMatch(launcher, "i)\.ahk$")
-                Run Chr(34) A_AhkPath Chr(34) " " Chr(34) launcher Chr(34), workingDirectory
+                RunUnelevated(A_AhkPath, Chr(34) launcher Chr(34), workingDirectory)
             else
-                Run launcher, workingDirectory
+                RunUnelevated(launcher, "", workingDirectory)
             return
         }
 
@@ -124,7 +125,7 @@ LaunchObsidian() {
         workingDirectory := InStr(executable, "\")
             ? RegExReplace(executable, "\\[^\\]+$")
             : ""
-        ObsidianRunUnelevated(executable, workingDirectory)
+        RunUnelevated(executable, "", workingDirectory)
     } catch as err {
         ToolTip "无法启动 Obsidian：" err.Message
         SetTimer (*) => ToolTip(), -2500
@@ -147,12 +148,4 @@ GetObsidianExecutable() {
     }
 
     return "Obsidian.exe"
-}
-
-ObsidianRunUnelevated(executable, workingDirectory := "") {
-    static VT_UI4 := 0x13
-    static SWC_DESKTOP := ComValue(VT_UI4, 0x8)
-
-    desktopShell := ComObject("Shell.Application").Windows.Item(SWC_DESKTOP).Document.Application
-    desktopShell.ShellExecute(executable, "", workingDirectory, "open", 1)
 }
