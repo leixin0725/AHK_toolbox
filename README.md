@@ -101,8 +101,9 @@ AutoHotkey 热键符号中，`^`、`!`、`+`、`#` 分别代表 Ctrl、Alt、Shi
 %LOCALAPPDATA%\ScratchEditor\AhkEditor\ScratchEditor.exe --background
 ```
 
-按下 `Win+F` 后，客户端会先复用现有管道；未运行时启动常驻实例并等待就绪，然后发送
-`toggle`。若程序缺失、启动超时或 IPC 失败，只显示短暂提示，不读取或改写剪贴板。
+AHK 登录启动后会等待 3 秒预热常驻实例；若 Explorer/Shell 尚未就绪，则每秒重试一次，
+最多 30 次。按下 `Win+F` 后，客户端会先复用现有管道；未运行时启动常驻实例并等待就绪，
+然后发送 `toggle`。若程序缺失、启动超时或 IPC 失败，只显示短暂提示，不读取或改写剪贴板。
 
 ScratchEditor 当前需要从源码构建。请以其上游 README 为准；典型安装流程为：
 

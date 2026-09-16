@@ -48,6 +48,9 @@ class ToolboxConfig {
         ? EnvGet("LOCALAPPDATA") "\ScratchEditor\AhkEditor\ScratchEditor.exe"
         : ""
     static ScratchEditorServerName := "ScratchEditor.Stage1.v1"
+    static ScratchEditorStartupDelayMs := 3000
+    static ScratchEditorStartupRetryIntervalMs := 1000
+    static ScratchEditorStartupRetryCount := 30
     static ScratchEditorStartupTimeoutMs := 1500
     static ScratchEditorFailureNoticeMs := 2500
 }

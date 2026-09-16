@@ -13,7 +13,8 @@ global ScratchEditorPipeHandle := -1
 if ToolboxConfig.EnableScratchEditor {
     Hotkey ToolboxConfig.ScratchEditorHotkey, ToggleScratchEditor
     OnExit CloseScratchEditorPipe
-    SetTimer StartScratchEditorResident, -1
+    ; 登录早期 Explorer/Shell 可能尚未就绪;稍后再启动临时编辑器。
+    SetTimer StartScratchEditorResident, -ToolboxConfig.ScratchEditorStartupDelayMs
 }
 
 ToggleScratchEditor(*) {
@@ -25,7 +26,18 @@ ToggleScratchEditor(*) {
 }
 
 StartScratchEditorResident(*) {
-    EnsureScratchEditorResident()
+    static attempts := 0
+
+    if EnsureScratchEditorResident() {
+        attempts := 0
+        return
+    }
+
+    attempts += 1
+    ; RunUnelevated 依赖 Explorer 的 Shell.Application;登录阶段不可用时稍后重试。
+    if attempts < ToolboxConfig.ScratchEditorStartupRetryCount {
+        SetTimer StartScratchEditorResident, -ToolboxConfig.ScratchEditorStartupRetryIntervalMs
+    }
 }
 
 EnsureScratchEditorResident() {
