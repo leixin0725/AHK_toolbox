@@ -173,6 +173,13 @@ SendScratchEditorCommand(command) {
     payload := Buffer(payloadChars)
     payloadBytes := StrPut(command "`n", payload, "UTF-8") - 1
     bytesWritten := 0
+    ; 热键的前台权限不会随 IPC 传递，发送前仅授权实际管道服务进程。
+    if command = "toggle" || command = "show" {
+        serverPid := 0
+        if DllCall("GetNamedPipeServerProcessId", "Ptr", ScratchEditorPipeHandle, "UInt*", &serverPid)
+            DllCall("AllowSetForegroundWindow", "UInt", serverPid)
+    }
+
     ok := DllCall(
         "WriteFile",
         "Ptr", ScratchEditorPipeHandle,
